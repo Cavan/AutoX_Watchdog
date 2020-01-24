@@ -1,7 +1,13 @@
 #include <SoftwareSerial.h>
+#include <Servo.h>
 // source code citation: https://lastminuteengineers.com/sim900-gsm-shield-arduino-tutorial/
 //Create software serial object to communicate with SIM900
 SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
+//Create servo object for the main camera
+Servo camServo;
+//Positions the main servo to look behind due to each servo being limited to 180degrees
+Servo rearCamServo;
+
 //Define command
 String const LOOKFRONT = "CMD<LOOK_FRONT>";
 String const LOOKLEFT = "CMD<LOOK_LEFT>";
@@ -25,6 +31,7 @@ void setup()
   mySerial.begin(9600);
 
   Serial.println("Initializing..."); 
+  Serial.println("Setting up wireless connection to network provider");
   delay(1000);
 
   mySerial.println("AT"); //Handshaking with SIM900
@@ -33,7 +40,12 @@ void setup()
   mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
   updateSerial();
   mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
+  //Replace this with a startup method
   updateSerial();
+
+  //Setup servo
+  camServo.attach(11);
+  camServo.write(90); //centre camServo position
 }
 
 void loop()
@@ -68,7 +80,9 @@ void updateSerial()
           Serial.println(inputCMD);
           //Parse methods here
           Serial.print("Sent command length: ");
+          inputCMD.trim();
           Serial.println(inputCMD.length());
+          //Serial.print(inputCMD, HEX);
           processCommands(inputCMD);
       }
       //Clear the buffer
@@ -93,25 +107,57 @@ void processCommands(String const command){
   if (command.equals(LOOKFRONT))
   {
     //Move camera to the front and capture image
+    camServo.write(90); //centre camServo position
     Serial.println(RESP_FRONT_IMG_CAPTURED);
+    prepareResponse("Front Image Captured");
   }
   else if(command.equals(LOOKLEFT)){
   //Move camera to the left and capture image
+  camServo.write(180); 
   Serial.println(RESP_LEFT_IMG_CAPTURED);
+  prepareResponse("Left Image Captured");
     
   }
   else if(command.equals(LOOKRIGHT)){
     //Move camera to the right and capture image
+    camServo.write(0);
     Serial.println(RESP_RIGHT_IMG_CAPTURED);
+    prepareResponse("Right Image Captured");
     
   }
   else if(command.equals(LOOKBEHIND)){
     //Move camera to the right and capture image
     Serial.println(RESP_READ_IMG_CAPTURED);
+    prepareResponse("Read Image Captured");
   }
   else{
     Serial.println(RESP_BAD_COMMAND);
+    prepareResponse(RESP_BAD_COMMAND);
   }
 
   
+}
+
+void prepareResponse(String responseMSG){
+
+  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
+  responseSMS();
+  mySerial.println("AT+CMGS=\"+15196088364\"");//change ZZ with country code and xxxxxxxxxxx with phone number to sms
+  responseSMS();
+  mySerial.print(responseMSG); //text content
+  responseSMS();
+  mySerial.write(26);
+}
+
+void responseSMS()
+{
+  delay(500);
+  while (Serial.available()) 
+  {
+    mySerial.write(Serial.read());//Forward what Serial received to Software Serial Port
+  }
+  while(mySerial.available()) 
+  {
+    Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
+  }
 }
