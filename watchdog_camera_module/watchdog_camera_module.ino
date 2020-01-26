@@ -26,6 +26,8 @@ const char bmp_header[BMPIMAGEOFFSET] PROGMEM =
 };
 // set pin 7 as the slave select for the digital pot:
 const int CS = 7;
+const int SD_CS = 3;
+
 bool is_header = false;
 int mode = 0;
 uint8_t start_capture = 0;
@@ -37,6 +39,9 @@ uint8_t start_capture = 0;
 uint8_t read_fifo_burst(ArduCAM myCAM);
 void setup() {
 // put your setup code here, to run once:
+
+//pinMode(SD_CS, OUTPUT);
+//digitalWrite(SD_CS, HIGH);
 uint8_t vid, pid;
 uint8_t temp;
 #if defined(__SAM3X8E__)
