@@ -11,16 +11,15 @@ void setup()
   //Begin serial communication with Arduino and SIM900
   mySerial.begin(9600);
 
-  Serial.println("Initializing...");
+  Serial.println("Initializing..."); 
   delay(1000);
 
   mySerial.println("AT"); //Handshaking with SIM900
   updateSerial();
-  mySerial.println("AT+CSQ"); //Signal quality test, value range is 0-31 , 31 is the best
+  
+  mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
   updateSerial();
-  mySerial.println("AT+CCID"); //Read SIM information to confirm whether the SIM is plugged
-  updateSerial();
-  mySerial.println("AT+CREG?"); //Check whether it has registered in the network
+  mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
   updateSerial();
 }
 
@@ -40,15 +39,4 @@ void updateSerial()
   {
     Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
   }
-}
-
-void SIM900power()
-{
-  pinMode(9, OUTPUT); 
-  digitalWrite(9,LOW);
-  delay(1000);
-  digitalWrite(9,HIGH);
-  delay(2000);
-  digitalWrite(9,LOW);
-  delay(3000);
 }

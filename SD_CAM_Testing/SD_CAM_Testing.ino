@@ -1,16 +1,3 @@
-/* FILE: watchdog_ArduCAM_Mini_Capture2SD
- * PROJECT: AutoX Watchdog
- * PROGRAMMER: Cavan Biggs
- * FIRST VERSION: February 5th 2020
- * DESCRIPTION: 
- *          
- *        
- *        
- *            
- *        
-*/
-
-
 // ArduCAM demo (C)2017 Lee
 // Web: http://www.ArduCAM.com
 // This program is a demo of how to use most of the functions
@@ -35,6 +22,7 @@
   #error Please select the hardware platform and camera module in the ../libraries/ArduCAM/memorysaver.h file
 #endif
 #define SD_CS 5
+//const int SD_CS = 5;
 const int SPI_CS = 7;
 #if defined (OV2640_MINI_2MP_PLUS)
   ArduCAM myCAM( OV2640, SPI_CS );
@@ -65,12 +53,11 @@ Serial.println(F("Capture Done."));
 length = myCAM.read_fifo_length();
 Serial.print(F("The fifo length is :"));
 Serial.println(length, DEC);
-//if (length >= MAX_FIFO_SIZE) //384K
-//{
-//  Serial.println(F("Over size."));
-//  return ;
-//}
-
+if (length >= MAX_FIFO_SIZE) //384K
+{
+  Serial.println(F("Over size."));
+  return ;
+}
 if (length == 0 ) //0 kb
 {
   Serial.println(F("Size is 0."));
@@ -137,8 +124,11 @@ Wire.begin();
 Serial.begin(115200);
 Serial.println(F("ArduCAM Start!"));
 //set the CS as an output:
+pinMode(SD_CS, OUTPUT);
+digitalWrite(SD_CS, LOW);
 pinMode(SPI_CS,OUTPUT);
 digitalWrite(SPI_CS, HIGH);
+
 // initialize SPI:
 SPI.begin();
   
@@ -210,7 +200,7 @@ Serial.println(F("SD Card detected."));
 myCAM.set_format(JPEG);
 myCAM.InitCAM();
 #if defined (OV2640_MINI_2MP_PLUS)
-  myCAM.OV2640_set_JPEG_size(OV2640_1600x1200);
+  myCAM.OV2640_set_JPEG_size(OV2640_320x240);
 #elif defined (OV3640_MINI_3MP)
   myCAM.OV3640_set_JPEG_size(OV3640_320x240);
 #else
@@ -220,6 +210,7 @@ myCAM.InitCAM();
 delay(1000);
 }
 void loop(){
+ 
 myCAMSaveToSDFile();
 delay(5000);
 }

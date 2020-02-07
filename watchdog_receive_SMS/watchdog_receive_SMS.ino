@@ -1,8 +1,13 @@
+//Demo Unit Code
+
 #include <SoftwareSerial.h>
 #include <Servo.h>
 // source code citation: https://lastminuteengineers.com/sim900-gsm-shield-arduino-tutorial/
 //Create software serial object to communicate with SIM900
-SoftwareSerial mySerial(7, 8); //SIM900 Tx & Rx is connected to Arduino #7 & #8
+//Arduino Mega 2560 settings TX #11 RX #12
+SoftwareSerial mySerial(11, 12);
+//UNO RX, TX settings
+//SoftwareSerial mySerial(11, 12); //SIM900 Tx & Rx is connected to Arduino #11 & #12
 //Create servo object for the main camera
 Servo camServo;
 //Positions the main servo to look behind due to each servo being limited to 180degrees
@@ -44,7 +49,7 @@ void setup()
   updateSerial();
 
   //Setup servo
-  camServo.attach(11);
+  camServo.attach(10);
   camServo.write(90); //centre camServo position
 }
 
