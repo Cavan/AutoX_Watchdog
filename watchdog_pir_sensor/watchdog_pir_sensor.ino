@@ -125,6 +125,8 @@ if(currentMillis - previousMillis >= interval)
     camServo.write(90);
     
     Serial.println("Front motion sensor: FRONT MOTION DETECTED");
+    //Send alert SMS
+    processCommands(LOOKFRONT, "| ALERT:->Motion was detected at front of vehicle");
     
   }
   else if (leftPirValue == HIGH)
@@ -133,6 +135,8 @@ if(currentMillis - previousMillis >= interval)
     rearServo.write(90);
     camServo.write(180);
     Serial.println("Left motion sensor: LEFT MOTION DETECTED");
+     //Send alert SMS
+    processCommands(LOOKLEFT, ",| ALERT:->Motion was detected at left side of vehicle");
   }
   else if (rightPirValue == HIGH)
   {
@@ -141,6 +145,8 @@ if(currentMillis - previousMillis >= interval)
      camServo.write(0);
     
     Serial.println("Right motion sensor: RIGHT MOTION DETECTED");
+     //Send alert SMS
+    processCommands(LOOKRIGHT, "| ALERT:->Motion was detected at right side of vehicle");
   }
   else if (rearPirValue == HIGH){
 
@@ -149,6 +155,8 @@ if(currentMillis - previousMillis >= interval)
     camServo.write(180);
     rearServo.write(180);
     Serial.println("Rear motion sensor: REAR MOTION DETECTED");
+     //Send alert SMS
+    processCommands(LOOKBEHIND, "| ALERT:->Motion was detected at the rear of the vehicle");
   }
 
 }
@@ -197,7 +205,7 @@ void updateSerial()
           inputCMD.trim();
           Serial.println(inputCMD.length());
           //Serial.print(inputCMD, HEX);
-          processCommands(inputCMD);
+          processCommands(inputCMD, "");
       }
       //Clear the buffer
       incomingCMD = "";
@@ -208,15 +216,16 @@ void updateSerial()
 }
 
 //Process the incoming command
-void processCommands(String const command){
+void processCommands(String const command, String moreInfo){
 
   //Look for the following values
   //#define LOOKFRONT "CMD<LOOK_FRONT>"
   //#define LOOKLEFT "CMD<LOOK_LEFT>"
   //#define LOOKRIGHT "CMD<LOOK_RIGHT>"
   //#define LOOKBEHIND "CMD<LOOK_BEHIND>"
-      Serial.print("Executing:..... ");
-      
+      Serial.print("Executing:..... \n");
+      Serial.print("Time of execution: ");
+      mySerial.println("AT+CCLK?");
 
   if (command.equals(LOOKFRONT))
   {
@@ -224,14 +233,14 @@ void processCommands(String const command){
     rearServo.write(90);
     camServo.write(90); //centre camServo position
     Serial.println(RESP_FRONT_IMG_CAPTURED);
-    prepareResponse("Front Image Captured");
+    prepareResponse("Front Image Captured " + moreInfo);
   }
   else if(command.equals(LOOKLEFT)){
   //Move camera to the left and capture image
   rearServo.write(90);
   camServo.write(180); 
   Serial.println(RESP_LEFT_IMG_CAPTURED);
-  prepareResponse("Left Image Captured");
+  prepareResponse("Left Image Captured " + moreInfo);
     
   }
   else if(command.equals(LOOKRIGHT)){
@@ -239,7 +248,7 @@ void processCommands(String const command){
     rearServo.write(90);
     camServo.write(0);
     Serial.println(RESP_RIGHT_IMG_CAPTURED);
-    prepareResponse("Right Image Captured");
+    prepareResponse("Right Image Captured " + moreInfo);
     
   }
   else if(command.equals(LOOKBEHIND)){
@@ -247,7 +256,7 @@ void processCommands(String const command){
     camServo.write(180);
     rearServo.write(180);
     Serial.println(RESP_READ_IMG_CAPTURED);
-    prepareResponse("Rear Image Captured");
+    prepareResponse("Rear Image Captured " + moreInfo);
   }
   else{
     Serial.println(RESP_BAD_COMMAND);
