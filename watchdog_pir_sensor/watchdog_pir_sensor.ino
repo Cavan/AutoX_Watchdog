@@ -33,6 +33,7 @@ int leftPirValue;
 int rightPirValue;
 int rearPirValue;
 
+
 //Define command
 String const LOOKFRONT = "CMD<LOOK_FRONT>";
 String const LOOKLEFT = "CMD<LOOK_LEFT>";
@@ -51,7 +52,19 @@ unsigned long previousMillis = 0;
 //interval constant 10 seconds
 const long interval = 10000;
 
-
+//Debounce setup
+//Variables
+int lastFrontPIR_State = LOW;
+int lastLeftPIR_State = LOW;
+int lastRightPIR_State = LOW;
+int lastRearPIR_State = LOW;
+int frontPIR_State;
+int leftPIR_State;
+int rightPIR_State;
+int rearPIR_State;
+//Time variables
+unsigned long lastDebounceTime = 0; //the last time the output pin was toggled
+unsigned long debounceDelay = 10000; //the debounce time.
 
 void setup() {
   
@@ -96,6 +109,8 @@ void setup() {
   //Replace this with a startup method
   updateSerial();
 
+  //Camera setup
+  camera_SD_setup();
   
   //initialize sensor for 1 minute
   MotionSensorInitialization(); 
@@ -106,60 +121,118 @@ void loop() {
   leftPirValue = digitalRead(leftPirPin);
   rightPirValue = digitalRead(rightPirPin);
   rearPirValue = digitalRead(rearPirPin);
-//  digitalWrite(ledPin, frontPirValue);
-//  digitalWrite(ledPin, leftPirValue);
-//  digitalWrite(ledPin, rightPirValue);
-//  digitalWrite(ledPin, rearPirValue);
-//Check the interval to trigger the sensors
-unsigned long currentMillis = millis();
 
-if(currentMillis - previousMillis >= interval)
-{
-  previousMillis = currentMillis;
-
+   // Check if value changed due to noise or trigger
+  if (frontPirValue != lastFrontPIR_State ||
+      leftPirValue  != lastLeftPIR_State ||
+      rightPirValue != lastRightPIR_State ||
+      rearPirValue  != lastRearPIR_State)
+      {
+        lastDebounceTime = millis();      
+      }
+  if((millis() - lastDebounceTime) > debounceDelay)
+  {
+  
+    Serial.print("Checking debounce time: ");
+    Serial.println((millis() - lastDebounceTime));
+  //Check if Front PIR state has changed
+  if (frontPirValue != frontPIR_State)
+  {
+    frontPIR_State = frontPirValue;
+  
   //Check for motion detected
-  if(frontPirValue == HIGH)
-  {
-    //Move servo to Front 90 degrees
-    rearServo.write(90);
-    camServo.write(90);
-    
-    Serial.println("Front motion sensor: FRONT MOTION DETECTED");
-    //Send alert SMS
-    processCommands(LOOKFRONT, "| ALERT:->Motion was detected at front of vehicle");
-    
+    if(frontPIR_State == HIGH)
+    {
+        
+          //Check if servos are already in position
+          //Move servo to Front 90 degrees
+          if (rearServo.read() != 90)
+          {
+            rearServo.write(90);
+          }
+          if (camServo.read() != 90)
+          {
+            camServo.write(90);
+            
+          }
+            Serial.println("Front motion sensor: FRONT MOTION DETECTED");
+            
+            //Send alert SMS
+            processCommands(LOOKFRONT, "| ALERT:->Motion was detected at front of vehicle");
+            lastFrontPIR_State = frontPirValue;
+        }
   }
-  else if (leftPirValue == HIGH)
-  {
-    //Move servo to Left 180 degrees
-    rearServo.write(90);
-    camServo.write(180);
-    Serial.println("Left motion sensor: LEFT MOTION DETECTED");
-     //Send alert SMS
-    processCommands(LOOKLEFT, ",| ALERT:->Motion was detected at left side of vehicle");
-  }
-  else if (rightPirValue == HIGH)
-  {
-    //Move servo to the right 0 degrees
-     rearServo.write(90);
-     camServo.write(0);
+      else if (leftPirValue != leftPIR_State)
+      {
+        leftPIR_State = leftPirValue;
+      
+        if(leftPIR_State == HIGH)
+        {
+              //Move servo to Left 180 degrees
+              if (rearServo.read() != 90)
+              {
+                rearServo.write(90);
+              }
+              if (camServo.read() != 180)
+              {
+                camServo.write(180);  
+              }
+              
+              Serial.println("Left motion sensor: LEFT MOTION DETECTED");
+               //Send alert SMS
+              processCommands(LOOKLEFT, ",| ALERT:->Motion was detected at left side of vehicle");
+              lastLeftPIR_State = leftPirValue;
+        }
+      }
+      else if (rightPirValue != rightPIR_State)
+      {
+          rightPIR_State = rightPirValue;
+      
+      
+          if(rightPIR_State == HIGH)
+          {
+              //Move servo to the right 0 degrees
+               if (rearServo.read() != 90)
+              {
+                rearServo.write(90);
+              }
+              if (camServo.read() != 0)
+              {
+               camServo.write(0); 
+              }
+               
+              Serial.println("Right motion sensor: RIGHT MOTION DETECTED");
+               //Send alert SMS
+              processCommands(LOOKRIGHT, "| ALERT:->Motion was detected at right side of vehicle");
+              lastRightPIR_State = rightPirValue;
+          }
+      }
+      else if (rearPirValue != rearPIR_State)
+      {
+        
+          rearPIR_State = rearPirValue;
+      
+          if (rearPIR_State == HIGH){
     
-    Serial.println("Right motion sensor: RIGHT MOTION DETECTED");
-     //Send alert SMS
-    processCommands(LOOKRIGHT, "| ALERT:->Motion was detected at right side of vehicle");
+              //Current servo on hand can only move 180 degrees left to right
+              //...will need to auquire a servo capable of 360 degree movment.
+              if (rearServo.read() != 180)
+              {
+                rearServo.write(180);  
+              }
+              if (camServo.read() != 180)
+              {
+                camServo.write(180);  
+              }
+               
+              Serial.println("Rear motion sensor: REAR MOTION DETECTED");
+               //Send alert SMS
+              processCommands(LOOKBEHIND, "| ALERT:->Motion was detected at the rear of the vehicle");
+              lastRearPIR_State = rearPirValue;
+          }
+      }
   }
-  else if (rearPirValue == HIGH){
 
-    //Current servo on hand can only move 180 degrees left to right
-    //...will need to auquire a servo capable of 360 degree movment.
-    camServo.write(180);
-    rearServo.write(180);
-    Serial.println("Rear motion sensor: REAR MOTION DETECTED");
-     //Send alert SMS
-    processCommands(LOOKBEHIND, "| ALERT:->Motion was detected at the rear of the vehicle");
-  }
-
-}
   //GSM module code
   updateSerial();
 }
@@ -224,8 +297,8 @@ void processCommands(String const command, String moreInfo){
   //#define LOOKRIGHT "CMD<LOOK_RIGHT>"
   //#define LOOKBEHIND "CMD<LOOK_BEHIND>"
       Serial.print("Executing:..... \n");
-      Serial.print("Time of execution: ");
-      mySerial.println("AT+CCLK?");
+      //Serial.print("Time of execution: ");
+      //mySerial.println("AT+CCLK?");
 
   if (command.equals(LOOKFRONT))
   {
@@ -233,6 +306,8 @@ void processCommands(String const command, String moreInfo){
     rearServo.write(90);
     camServo.write(90); //centre camServo position
     Serial.println(RESP_FRONT_IMG_CAPTURED);
+    //Capture image
+    myCAMSaveToSDFile();
     prepareResponse("Front Image Captured " + moreInfo);
   }
   else if(command.equals(LOOKLEFT)){
@@ -240,6 +315,8 @@ void processCommands(String const command, String moreInfo){
   rearServo.write(90);
   camServo.write(180); 
   Serial.println(RESP_LEFT_IMG_CAPTURED);
+  //Capture image
+    myCAMSaveToSDFile();
   prepareResponse("Left Image Captured " + moreInfo);
     
   }
@@ -248,6 +325,8 @@ void processCommands(String const command, String moreInfo){
     rearServo.write(90);
     camServo.write(0);
     Serial.println(RESP_RIGHT_IMG_CAPTURED);
+    //Capture image
+    myCAMSaveToSDFile();
     prepareResponse("Right Image Captured " + moreInfo);
     
   }
@@ -256,6 +335,8 @@ void processCommands(String const command, String moreInfo){
     camServo.write(180);
     rearServo.write(180);
     Serial.println(RESP_READ_IMG_CAPTURED);
+    //Capture image
+    myCAMSaveToSDFile();
     prepareResponse("Rear Image Captured " + moreInfo);
   }
   else{
