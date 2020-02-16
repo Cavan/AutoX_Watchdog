@@ -122,26 +122,24 @@ void loop() {
   rightPirValue = digitalRead(rightPirPin);
   rearPirValue = digitalRead(rearPirPin);
 
-   // Check if value changed due to noise or trigger
-  if (frontPirValue != lastFrontPIR_State ||
-      leftPirValue  != lastLeftPIR_State ||
-      rightPirValue != lastRightPIR_State ||
-      rearPirValue  != lastRearPIR_State)
-      {
-        lastDebounceTime = millis();      
-      }
+//   // Check if value changed due to noise or trigger
+//  if (frontPirValue != lastFrontPIR_State ||
+//      leftPirValue  != lastLeftPIR_State ||
+//      rightPirValue != lastRightPIR_State ||
+//      rearPirValue  != lastRearPIR_State)
+//      {
+//        lastDebounceTime = millis();      
+//      }
+
+
   if((millis() - lastDebounceTime) > debounceDelay)
   {
   
     Serial.print("Checking debounce time: ");
     Serial.println((millis() - lastDebounceTime));
   //Check if Front PIR state has changed
-  if (frontPirValue != frontPIR_State)
-  {
-    frontPIR_State = frontPirValue;
-  
   //Check for motion detected
-    if(frontPIR_State == HIGH)
+    if (frontPirValue == HIGH)
     {
         
           //Check if servos are already in position
@@ -159,14 +157,10 @@ void loop() {
             
             //Send alert SMS
             processCommands(LOOKFRONT, "| ALERT:->Motion was detected at front of vehicle");
-            lastFrontPIR_State = frontPirValue;
-        }
-  }
-      else if (leftPirValue != leftPIR_State)
-      {
-        leftPIR_State = leftPirValue;
-      
-        if(leftPIR_State == HIGH)
+            //lastFrontPIR_State = frontPirValue;
+            lastDebounceTime = millis();
+       }
+      else if (leftPirValue == HIGH)
         {
               //Move servo to Left 180 degrees
               if (rearServo.read() != 90)
@@ -181,15 +175,10 @@ void loop() {
               Serial.println("Left motion sensor: LEFT MOTION DETECTED");
                //Send alert SMS
               processCommands(LOOKLEFT, ",| ALERT:->Motion was detected at left side of vehicle");
-              lastLeftPIR_State = leftPirValue;
+              //lastLeftPIR_State = leftPirValue;
+              lastDebounceTime = millis();
         }
-      }
-      else if (rightPirValue != rightPIR_State)
-      {
-          rightPIR_State = rightPirValue;
-      
-      
-          if(rightPIR_State == HIGH)
+      else if (rightPirValue == HIGH)
           {
               //Move servo to the right 0 degrees
                if (rearServo.read() != 90)
@@ -204,15 +193,10 @@ void loop() {
               Serial.println("Right motion sensor: RIGHT MOTION DETECTED");
                //Send alert SMS
               processCommands(LOOKRIGHT, "| ALERT:->Motion was detected at right side of vehicle");
-              lastRightPIR_State = rightPirValue;
+              //lastRightPIR_State = rightPirValue;
+              lastDebounceTime = millis();
           }
-      }
-      else if (rearPirValue != rearPIR_State)
-      {
-        
-          rearPIR_State = rearPirValue;
-      
-          if (rearPIR_State == HIGH){
+      else if (rearPirValue == HIGH){
     
               //Current servo on hand can only move 180 degrees left to right
               //...will need to auquire a servo capable of 360 degree movment.
@@ -228,9 +212,9 @@ void loop() {
               Serial.println("Rear motion sensor: REAR MOTION DETECTED");
                //Send alert SMS
               processCommands(LOOKBEHIND, "| ALERT:->Motion was detected at the rear of the vehicle");
-              lastRearPIR_State = rearPirValue;
+              //lastRearPIR_State = rearPirValue;
+              lastDebounceTime = millis();
           }
-      }
   }
 
   //GSM module code
