@@ -32,7 +32,9 @@ int frontPirValue; // Place to store read PIR Value
 int leftPirValue;
 int rightPirValue;
 int rearPirValue;
-
+//Servo trap
+int camServoCount = 0;
+int rearServoCount = 0;
 
 //Define command
 String const LOOKFRONT = "CMD<LOOK_FRONT>";
@@ -131,12 +133,17 @@ void loop() {
 //        lastDebounceTime = millis();      
 //      }
 
+    Serial.print("Camera Servo has moved: ");
+    Serial.println(camServoCount);
+    Serial.print("Rear Servo has moved: ");
+    Serial.println(rearServoCount);
 
   if((millis() - lastDebounceTime) > debounceDelay)
   {
   
     Serial.print("Checking debounce time: ");
     Serial.println((millis() - lastDebounceTime));
+    
   //Check if Front PIR state has changed
   //Check for motion detected
     if (frontPirValue == HIGH)
@@ -147,10 +154,12 @@ void loop() {
           if (rearServo.read() != 90)
           {
             rearServo.write(90);
+              rearServoCount++;
           }
           if (camServo.read() != 90)
           {
             camServo.write(90);
+            camServoCount++;
             
           }
             Serial.println("Front motion sensor: FRONT MOTION DETECTED");
@@ -166,10 +175,12 @@ void loop() {
               if (rearServo.read() != 90)
               {
                 rearServo.write(90);
+                rearServoCount++;
               }
               if (camServo.read() != 180)
               {
-                camServo.write(180);  
+                camServo.write(180);
+                camServoCount++;  
               }
               
               Serial.println("Left motion sensor: LEFT MOTION DETECTED");
@@ -184,10 +195,12 @@ void loop() {
                if (rearServo.read() != 90)
               {
                 rearServo.write(90);
+                rearServoCount++;
               }
               if (camServo.read() != 0)
               {
-               camServo.write(0); 
+               camServo.write(0);
+               camServoCount++; 
               }
                
               Serial.println("Right motion sensor: RIGHT MOTION DETECTED");
@@ -202,11 +215,13 @@ void loop() {
               //...will need to auquire a servo capable of 360 degree movment.
               if (rearServo.read() != 180)
               {
-                rearServo.write(180);  
+                rearServo.write(180);
+                rearServoCount++;  
               }
               if (camServo.read() != 180)
               {
-                camServo.write(180);  
+                camServo.write(180);
+                camServoCount++;  
               }
                
               Serial.println("Rear motion sensor: REAR MOTION DETECTED");
