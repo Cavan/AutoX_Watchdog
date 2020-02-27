@@ -9,7 +9,7 @@ unsigned long previousMillis = 0;
 const long interval = 10000;
 //Time variables
 unsigned long lastDebounceTime = 0; //the last time the output pin was toggled
-unsigned long debounceDelay = 3000; //the debounce time.
+unsigned long debounceDelay = 2000; //the debounce time.
 int counter = 0;
 
 void setup() {

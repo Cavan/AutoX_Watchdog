@@ -1,8 +1,10 @@
 #include <SoftwareSerial.h>
 
 //Create software serial object to communicate with SIM900
+//Settings for Mega 2560
 SoftwareSerial mySerial(11, 12); //SIM900 Tx & Rx is connected to Arduino #11 & #12
-
+//Settings for UNO
+//SoftwareSerial mySerial(7, 8); //UNO Pins for Tx & Rx #7 & #8
 void setup()
 {
   //Begin serial communication with Arduino and Arduino IDE (Serial Monitor)
