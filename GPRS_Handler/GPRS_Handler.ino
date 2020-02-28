@@ -47,7 +47,8 @@ void setup()
     //Check SD Module
     if (checkSDModule()){
       //Read image bytes
-       readImageBytes();
+       //readImageBytes();
+       sendMMS();
       //Get the information about the sd card.
       //SD_Info();
   }else{
@@ -98,6 +99,47 @@ void mmsConfiguration(){
 }
 //When switching between Text Mode and MMS mode be sure to exit out of MMS...
 // mode using AT+CMMSTERM, other wise when you send the command 'AT+CMMSINIT" you will get an error.
+
+void sendMMS(){
+
+  mySerial.println("AT+CMMSEDIT=1"); //Enter edit mode
+  updateSerial();
+  mySerial.println("AT+CMMSDOWN=\"PIC\",size, wait time MS"); //Download image and get size
+  updateSerial();
+  mySerial.println("AT+CMMSDOWN=\"TITLE\",3,5000"); //Download MMS title
+  updateSerial();
+  mySerial.println("AT+CMMSDOWN=\"TEXT\",5,5000"); //Download text, with size of x bytes and wait x milliseconds
+  updateSerial();
+  // If the data is in Unicode (big endian) format then prepend the data with 'FE FF'.
+  // If the data is in Unitcode (little endian) format the prepend the data with 'FF FE'. 
+  //Example: "00 31 00 32 00 33 00 34" Big Endian format = "FE FF 00 31 00 32 00 33 00 34"
+  mySerial.println("AT+CMMSRECP=\"15196088364\""); //Define the recepient of the MMS
+  updateSerial();
+  mySerial.println("AT+CMMSVIEW"); //Show the message to be sent
+  updateSerial();
+  mySerial.println("AT+CMMSDELFILE=2"); //Delete the TEXT data of the MMS
+  updateSerial();
+  mySerial.println("AT+CMMSVIEW"); //Show the message to be sent after deletion
+  updateSerial();
+  mySerial.println("AT+CMMSSEND"); //Send MMS to the registered recipient.
+  updateSerial();
+  mySerial.println("AT+CMMSEDIT=0"); //Exit MMS edit mode and clear the buffer.
+  updateSerial();
+  mySerial.println("AT+CMMSTERM"); //Exit MMS Mode
+  updateSerial();
+ 
+  
+  
+  File* sdImage;
+  //Call the method to retrieve the image
+  readImageBytes();
+  //Print the size of the image pointer
+  Serial.print("Size of image pointer: ");
+  //Serial.println(sdImage.size());
+
+  //Possibly send commands to go back into text mode to handle incoming commands from the user.
+}
+
 
 
 //Initialize SD Module
@@ -178,8 +220,10 @@ void SD_Info(){
 
 //AT+CMMSDOWN="PIC",12963,20000
 
-void readImageBytes(){
+File readImageBytes(){
 
+  File retImage;
+  
   if (!SD.begin(SDchipSelect)) {
     Serial.println("initialization failed!");
     return;
@@ -199,13 +243,14 @@ void readImageBytes(){
     //Print the size of the file
     Serial.println(imageMMS.size());
     //close the file
+    retImage = imageMMS;
     imageMMS.close();
     Serial.println("Done reading file");
   }else {
     //could not open file 
     Serial.println("Error opening file");
   }
-  
+  return retImage;
 }
 
 
