@@ -15,15 +15,18 @@ Sd2Card card;
 SdVolume volume;
 SdFile root;
 
+File dataFile;
+int i;
+unsigned char data=0;
+
 const int SDchipSelect = 7;
 
 void setup()
 {
   //Begin serial communication with Arduino and Arduino IDE (Serial Monitor)
   Serial.begin(9600);
-  
   //Begin serial communication with Arduino and SIM900
-  mySerial.begin(9600);
+  mySerial.begin(19200);
 
   Serial.println("Initializing..."); 
   delay(1000);
@@ -35,11 +38,14 @@ void setup()
   updateSerial();
   mySerial.println("AT+CNMI=1,2,0,0,0"); // Decides how newly arrived SMS messages should be handled
   updateSerial();
-  mySerial.println("AT+CMMSINIT"); // Initialize MMS mode
-  updateSerial();
   //Configure MMS Settings to network provider
   mmsConfiguration();
-
+  //SD initialization
+  if (!SD.begin(SDchipSelect)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
 
 //File handling source code
  
@@ -48,7 +54,8 @@ void setup()
     if (checkSDModule()){
       //Read image bytes
        //readImageBytes();
-       sendMMS();
+       Serial.println("System startup successful");
+       //sendMMS();
       //Get the information about the sd card.
       //SD_Info();
   }else{
@@ -57,11 +64,55 @@ void setup()
 }
 void loop()
 {
-  updateSerial();
+  
+
+  if(mySerial.available())
+  {
+    while(mySerial.available())
+    {
+      data=mySerial.read();
+      Serial.write(data);
+    }
+    data=0;
+  }
+
+  if(Serial.available())
+  {
+    data=Serial.read();
+  }  
+  //Check incoming input
+  if(data=='s')
+  {
+    Serial.println("Preparing to send MMS");
+    sendMMS();
+  }
+  if (data=='R'){
+    //Terminate MMS mode
+    mySerial.print("AT+CMMSTERM");
+    updateSerial();
+  }
+  
+  data=0;
+  
 }
 
 void updateSerial()
 {
+  
+  delay(1000);
+  while (Serial.available()) 
+  {
+    mySerial.write(Serial.read());//Forward what Serial received to Software Serial Port
+  }
+  while(mySerial.available()) 
+  {
+    Serial.write(mySerial.read());//Forward what Software Serial received to Serial Port
+  }
+}
+
+void commandHandler()
+{
+  Serial.println("Enter a command");
   delay(500);
   while (Serial.available()) 
   {
@@ -74,8 +125,20 @@ void updateSerial()
 }
 
 
+void updateSerial2(){
+//  if(Serial2.available()){
+//    while (Serial2.available()){
+//      data=Serial2.read();
+//      Serial.write(data);
+//    }
+//    data=0;
+//  }
+}
+
+
 //Set MMS configuration for the Rogers network
 void mmsConfiguration(){
+  
   //mySerial.println("AT+CMGF=1"); // Configuring TEXT mode
   mySerial.println("AT+CMMSINIT"); // Initialize MMS mode
   updateSerial();
@@ -89,9 +152,10 @@ void mmsConfiguration(){
   updateSerial();
   mySerial.println("AT+SAPBR=3,1,\"Contype\",\"GPRS\""); //Set bearer parameter
   updateSerial();
-  mySerial.println("AT+SAPBR=3,1,\"APN\",\"CMWAP\"");
+  mySerial.println("AT+SAPBR=3,1,\"APN\",\"mms.gprs.rogers.com\"");
   updateSerial();
-  mySerial.println("AT+SAPBR=1,1"); //Active bearer context
+  mySerial.println("AT+SAPBR=1,1"); //Active bearer context NOTE: Sometimes will throw an error because a connection is ...
+  //already established, I was able to rectify the issue by reseting the GPRS module.
   updateSerial();
   mySerial.println("AT+SAPBR=2,1"); 
   updateSerial();
@@ -104,22 +168,41 @@ void sendMMS(){
 
   mySerial.println("AT+CMMSEDIT=1"); //Enter edit mode
   updateSerial();
-  mySerial.println("AT+CMMSDOWN=\"PIC\",size, wait time MS"); //Download image and get size
+  mySerial.println("AT+CMMSDOWN=\"PIC\",52097,60000,\"237.JPG\""); //Download image and get size
   updateSerial();
-  mySerial.println("AT+CMMSDOWN=\"TITLE\",3,5000"); //Download MMS title
-  updateSerial();
-  mySerial.println("AT+CMMSDOWN=\"TEXT\",5,5000"); //Download text, with size of x bytes and wait x milliseconds
-  updateSerial();
+  
+//  mySerial.println("AT+CMMSDOWN=\"TITLE\",3,5000"); //Download MMS title
+//  updateSerial();
+//  mySerial.println("AT+CMMSDOWN=\"TEXT\",5,5000"); //Download text, with size of x bytes and wait x milliseconds
+//  updateSerial();
   // If the data is in Unicode (big endian) format then prepend the data with 'FE FF'.
   // If the data is in Unitcode (little endian) format the prepend the data with 'FF FE'. 
   //Example: "00 31 00 32 00 33 00 34" Big Endian format = "FE FF 00 31 00 32 00 33 00 34"
-  mySerial.println("AT+CMMSRECP=\"15196088364\""); //Define the recepient of the MMS
+  //Open the file to be sent via MMS
+  dataFile=SD.open("/237.JPG");
+  i=0;
+  if(dataFile)
+  {
+    while(dataFile.available())
+    {
+      data=dataFile.read();
+      //if(data<0x10) Serial.print("0");
+      //Serial.print(data,HEX);
+      //i++;
+      //if((i%40)==0) Serial.println();
+      mySerial.write(data);
+    }
+    dataFile.close();
+  }
+  else
+  {
+    Serial.println("error opening 237.JPG");
+  }
+
+  delay(1000);
+  mySerial.println("AT+CMMSRECP=\"+15196088364\""); //Define the recepient of the MMS
   updateSerial();
   mySerial.println("AT+CMMSVIEW"); //Show the message to be sent
-  updateSerial();
-  mySerial.println("AT+CMMSDELFILE=2"); //Delete the TEXT data of the MMS
-  updateSerial();
-  mySerial.println("AT+CMMSVIEW"); //Show the message to be sent after deletion
   updateSerial();
   mySerial.println("AT+CMMSSEND"); //Send MMS to the registered recipient.
   updateSerial();
@@ -127,15 +210,15 @@ void sendMMS(){
   updateSerial();
   mySerial.println("AT+CMMSTERM"); //Exit MMS Mode
   updateSerial();
- 
   
   
-  File* sdImage;
-  //Call the method to retrieve the image
-  readImageBytes();
-  //Print the size of the image pointer
-  Serial.print("Size of image pointer: ");
-  //Serial.println(sdImage.size());
+  
+//  File* sdImage;
+//  //Call the method to retrieve the image
+//  readImageBytes();
+//  //Print the size of the image pointer
+//  Serial.print("Size of image pointer: ");
+//  //Serial.println(sdImage.size());
 
   //Possibly send commands to go back into text mode to handle incoming commands from the user.
 }
